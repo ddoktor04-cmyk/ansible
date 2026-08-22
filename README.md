@@ -65,3 +65,10 @@ ansible-playbook playbook.yml --tags "config"
 ```bash
 ansible aws_servers -m ping -vvv
 ```
+
+## Playbooks
+
+### Install Apache
+```bash
+ansible-playbook playbooks/apache.yml
+```
