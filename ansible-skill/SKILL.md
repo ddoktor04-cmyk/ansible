@@ -494,17 +494,17 @@ Start-Service -Name WinRM
 ### Windows Ad-hoc Commands
 
 ```bash
-# Test connection
-ansible windows -m ansible.windows.win_ping
+# Test connection (password prompted with -k)
+ansible windows -m ansible.windows.win_ping -k
 
 # Run command
-ansible windows -m ansible.windows.win_shell -a "whoami"
+ansible windows -m ansible.windows.win_shell -a "whoami" -k
 
 # Check disk
-ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem"
+ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem" -k
 
 # Run executable
-ansible windows -m ansible.windows.win_command -a "dir C:\\"
+ansible windows -m ansible.windows.win_command -a "dir C:\\\\" -k
 ```
 
 ### Requirements

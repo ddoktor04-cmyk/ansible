@@ -17,8 +17,8 @@ Ansible inventory file for managing AWS EC2 instances and Windows machines.
 # Linux hosts
 ansible aws_servers -m ping
 
-# Windows host
-ansible windows -m ansible.windows.win_ping 
+# Windows host (password prompted with -k)
+ansible windows -m ansible.windows.win_ping -k
 ```
 
 ### Latency Check
@@ -54,22 +54,22 @@ ansible ubuntu -m apt -a "update_cache=yes upgrade=yes" --become
 ### Ad-hoc Commands (Windows)
 ```bash
 # Check Windows info
-ansible windows -m ansible.windows.win_shell -a "hostname" 
+ansible windows -m ansible.windows.win_shell -a "hostname" -k
 
 # Check disk space
-ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem" 
+ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem" -k
 
 # Run command on Windows
-ansible windows -m ansible.windows.win_command -a "whoami" 
+ansible windows -m ansible.windows.win_command -a "whoami" -k
 ```
 
 ### Playbook
 ```bash
 # Run playbook
-ansible-playbook playbook.yml 
+ansible-playbook playbook.yml
 
 # Dry run
-ansible-playbook playbook.yml --check --diff 
+ansible-playbook playbook.yml --check --diff
 
 # Limit to specific host
 ansible-playbook playbook.yml --limit ubuntu
@@ -98,25 +98,25 @@ powershell -ExecutionPolicy Bypass -File playbooks/winrm-setup.ps1
 ```
 Потім запустіть bootstrap-плейбук:
 ```bash
-ansible-playbook playbooks/win-bootstrap.yml 
+ansible-playbook playbooks/win-bootstrap.yml -k
 ```
 
 ### Basic Windows Configuration
 ```bash
 # Show system info
-ansible-playbook playbooks/win-config.yml  --tags "info"
+ansible-playbook playbooks/win-config.yml -k --tags "info"
 
 # Apply configuration
-ansible-playbook playbooks/win-config.yml  --tags "config"
+ansible-playbook playbooks/win-config.yml -k --tags "config"
 
 # Install Windows updates
-ansible-playbook playbooks/win-config.yml  --tags "update"
+ansible-playbook playbooks/win-config.yml -k --tags "update"
 
 # Security hardening
-ansible-playbook playbooks/win-config.yml  --tags "hardening"
+ansible-playbook playbooks/win-config.yml -k --tags "hardening"
 
 # Full configuration
-ansible-playbook playbooks/win-config.yml 
+ansible-playbook playbooks/win-config.yml -k
 ```
 
 ## Files
@@ -124,8 +124,6 @@ ansible-playbook playbooks/win-config.yml
 ```
 ├── ansible.cfg              # Ansible configuration
 ├── inventory.ini            # Hosts inventory
-├── group_vars/
-│   └── windows.yml          # Windows credentials
 ├── playbooks/
 │   ├── apache.yml           # Apache installation (Linux)
 │   ├── win-bootstrap.yml    # WinRM bootstrap (Windows)
