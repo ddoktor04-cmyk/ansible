@@ -400,8 +400,9 @@ ansible_winrm_transport=basic
 ansible_winrm_server_cert_validation=ignore
 ansible_winrm_scheme=http
 ansible_port=5985
-ansible_winrm_password={{ win_password }}
 ```
+
+> Пароль вводиться при запиті через `-k` flag, не зберігається в inventory.
 
 ### WinRM Bootstrap
 
@@ -512,6 +513,54 @@ ansible windows -m ansible.windows.win_command -a "dir C:\\\\" -k
 - `ansible.windows` collection: `ansible-galaxy collection install ansible.windows`
 - `community.windows` collection: `ansible-galaxy collection install community.windows`
 - Python `pywinrm` package: `pip install pywinrm`
+
+### Troubleshooting WinRM
+
+#### "the specified credentials were rejected by the server"
+
+Навіть якщо пароль правильний, Windows може відхиляти Basic auth через HTTP.
+
+**Причина:** `AllowUnencrypted = false` блокує Basic auth на незашифрованих з'єднаннях (HTTP, port 5985).
+
+**Рішення (на Windows Admin PowerShell):**
+```powershell
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+Restart-Service WinRM
+```
+
+**Перевірка:**
+```powershell
+winrm get winrm/config/service
+# AllowUnencrypted = true
+```
+
+#### "'latin-1' codec can't encode characters"
+
+**Причина:** Пароль містить символи поза latin-1 (українські літери, емодзі).
+
+**Рішення:** Використовуйте тільки ASCII символи в паролі (a-z, A-Z, 0-9).
+
+#### Prompt showing "SSH password:" замість "WinRM password:"
+
+**Причина:** `pywinrm` не встановлений або не бачиться Ansible.
+
+**Рішення:**
+```bash
+pip install pywinrm
+# або
+sudo apt install python3-winrm
+```
+
+#### Connection timeout
+
+**Причина:** WinRM не запущений або firewall блокує порт 5985.
+
+**Рішення (на Windows):**
+```powershell
+Enable-PSRemoting -Force -SkipNetworkProfileCheck
+winrm quickconfig -q
+netsh advfirewall firewall add rule name="WinRM HTTP" dir=in action=allow protocol=TCP localport=5985
+```
 
 ## Checklist
 
