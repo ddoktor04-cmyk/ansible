@@ -1,4 +1,1 @@
-$ANSIBLE_VAULT;1.1;AES256
-Vo5F2Og+xVk5ex43AnqF+Oyx13ttWNJv7KmyIvHWOp6P09ICAyFHL8Ig3LLUw82J2ncrPLvx7bI00LwM
-2ufzt7yoy2xA5kDCIdlI0iZuWnXRXMg3nD6vuP0puKmUyB9kHNezW5nihF77v1fuVZlumx5wXG+s/Vs1
-ivs97j42sSH4QJqsHUtsfOuLZ2Ona73hby7Z0o+gcQ==
+win_password: award

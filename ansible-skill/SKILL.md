@@ -321,46 +321,6 @@ server {
 ansible-playbook site.yml --tags "config"
 ```
 
-## Ansible Vault
-
-```bash
-# Create encrypted file
-ansible-vault create secrets.yml
-
-# Edit encrypted file
-ansible-vault edit secrets.yml
-
-# Run playbook with vault (password prompted)
-ansible-playbook site.yml --ask-vault-pass
-
-# View encrypted file
-ansible-vault view secrets.yml --ask-vault-pass
-```
-
-### Store Secrets in group_vars
-
-```bash
-# Create vault-encrypted group_vars
-ansible-vault create group_vars/windows.yml
-# Content: win_password: my_secret_password
-
-# Reference in inventory.ini
-# ansible_winrm_password={{ win_password }}
-
-# Run with vault (password prompted)
-ansible-playbook site.yml --ask-vault-pass
-```
-
-### Encrypt Variables
-
-```yaml
-# In playbook
-vars:
-  db_password: !vault |
-    $ANSIBLE_VAULT;1.1;AES256
-    663864396532363364626265666530633361...
-```
-
 ## Check Mode and Diff
 
 ```bash
@@ -560,8 +520,6 @@ ansible windows -m ansible.windows.win_command -a "dir C:\\"
 - [ ] Змінні винесені в group_vars/host_vars
 - [ ] Playbook'и ідемпотентні
 - [ ] Використовуються теги для групування тасків
-- [ ] Чутливі дані захищені через vault
-- [ ] Vault password вводиться через --ask-vault-pass
 - [ ] WinRM bootstrap виконано на Windows хостах
 - [ ] Тести перед застосуванням (--check --diff)
 - [ ] Документація в README

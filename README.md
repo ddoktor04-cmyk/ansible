@@ -10,22 +10,6 @@ Ansible inventory file for managing AWS EC2 instances and Windows machines.
 | ubuntu         | 56.228.15.146  | Ubuntu 26.06  | ubuntu   | SSH        |
 | win10          | 172.14.50.80   | Windows 10    | user1    | WinRM      |
 
-## Vault
-
-Паролі зберігаються в зашифрованому файлі `group_vars/windows.yml` (Ansible Vault).
-Пароль vault вводиться при запиті перед виконанням.
-
-```bash
-# Decrypt vault file
-ansible-vault view group_vars/windows.yml --ask-vault-pass
-
-# Edit vault file
-ansible-vault edit group_vars/windows.yml --ask-vault-pass
-
-# Run playbook with vault
-ansible-playbook playbooks/win-config.yml --ask-vault-pass
-```
-
 ## Commands
 
 ### Connection Test
@@ -34,7 +18,7 @@ ansible-playbook playbooks/win-config.yml --ask-vault-pass
 ansible aws_servers -m ping
 
 # Windows host
-ansible windows -m ansible.windows.win_ping --ask-vault-pass
+ansible windows -m ansible.windows.win_ping 
 ```
 
 ### Latency Check
@@ -70,22 +54,22 @@ ansible ubuntu -m apt -a "update_cache=yes upgrade=yes" --become
 ### Ad-hoc Commands (Windows)
 ```bash
 # Check Windows info
-ansible windows -m ansible.windows.win_shell -a "hostname" --ask-vault-pass
+ansible windows -m ansible.windows.win_shell -a "hostname" 
 
 # Check disk space
-ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem" --ask-vault-pass
+ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem" 
 
 # Run command on Windows
-ansible windows -m ansible.windows.win_command -a "whoami" --ask-vault-pass
+ansible windows -m ansible.windows.win_command -a "whoami" 
 ```
 
 ### Playbook
 ```bash
 # Run playbook
-ansible-playbook playbook.yml --ask-vault-pass
+ansible-playbook playbook.yml 
 
 # Dry run
-ansible-playbook playbook.yml --check --diff --ask-vault-pass
+ansible-playbook playbook.yml --check --diff 
 
 # Limit to specific host
 ansible-playbook playbook.yml --limit ubuntu
@@ -114,25 +98,25 @@ powershell -ExecutionPolicy Bypass -File playbooks/winrm-setup.ps1
 ```
 Потім запустіть bootstrap-плейбук:
 ```bash
-ansible-playbook playbooks/win-bootstrap.yml --ask-vault-pass
+ansible-playbook playbooks/win-bootstrap.yml 
 ```
 
 ### Basic Windows Configuration
 ```bash
 # Show system info
-ansible-playbook playbooks/win-config.yml --ask-vault-pass --tags "info"
+ansible-playbook playbooks/win-config.yml  --tags "info"
 
 # Apply configuration
-ansible-playbook playbooks/win-config.yml --ask-vault-pass --tags "config"
+ansible-playbook playbooks/win-config.yml  --tags "config"
 
 # Install Windows updates
-ansible-playbook playbooks/win-config.yml --ask-vault-pass --tags "update"
+ansible-playbook playbooks/win-config.yml  --tags "update"
 
 # Security hardening
-ansible-playbook playbooks/win-config.yml --ask-vault-pass --tags "hardening"
+ansible-playbook playbooks/win-config.yml  --tags "hardening"
 
 # Full configuration
-ansible-playbook playbooks/win-config.yml --ask-vault-pass
+ansible-playbook playbooks/win-config.yml 
 ```
 
 ## Files
@@ -141,7 +125,7 @@ ansible-playbook playbooks/win-config.yml --ask-vault-pass
 ├── ansible.cfg              # Ansible configuration
 ├── inventory.ini            # Hosts inventory
 ├── group_vars/
-│   └── windows.yml          # Encrypted vault file
+│   └── windows.yml          # Windows credentials
 ├── playbooks/
 │   ├── apache.yml           # Apache installation (Linux)
 │   ├── win-bootstrap.yml    # WinRM bootstrap (Windows)
