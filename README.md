@@ -1,19 +1,39 @@
 # Ansible AWS Inventory
 
-Ansible inventory file for managing AWS EC2 instances.
+Ansible inventory file for managing AWS EC2 instances and Windows machines.
 
 ## Hosts
 
-| Name           | IP             | OS            | User     |
-|----------------|----------------|---------------|----------|
-| amazon_linux   | 13.61.145.29   | Amazon Linux  | ec2-user |
-| ubuntu         | 56.228.15.146  | Ubuntu 26.06  | ubuntu   |
+| Name           | IP             | OS            | User     | Connection |
+|----------------|----------------|---------------|----------|------------|
+| amazon_linux   | 13.61.145.29   | Amazon Linux  | ec2-user | SSH        |
+| ubuntu         | 56.228.15.146  | Ubuntu 26.06  | ubuntu   | SSH        |
+| win10          | 172.14.50.80   | Windows 10    | user1    | WinRM      |
+
+## Vault
+
+Паролі зберігаються в зашифрованому файлі `group_vars/windows.yml` (Ansible Vault).
+
+```bash
+# Decrypt vault file
+ansible-vault view group_vars/windows.yml --vault-password-file .vault_pass
+
+# Edit vault file
+ansible-vault edit group_vars/windows.yml --vault-password-file .vault_pass
+
+# Run playbook with vault
+ansible-playbook playbooks/win-config.yml --vault-password-file .vault_pass
+```
 
 ## Commands
 
 ### Connection Test
 ```bash
+# Linux hosts
 ansible aws_servers -m ping
+
+# Windows host
+ansible windows -m ansible.windows.win_ping --vault-password-file .vault_pass
 ```
 
 ### Latency Check
@@ -28,7 +48,7 @@ ansible-inventory --graph
 ansible-inventory -i inventory.ini --list
 ```
 
-### Ad-hoc Commands
+### Ad-hoc Commands (Linux)
 ```bash
 # Run command on all hosts
 ansible aws_servers -m shell -a "uptime"
@@ -46,13 +66,25 @@ ansible amazon_linux -m yum -a "name=* state=latest" --become
 ansible ubuntu -m apt -a "update_cache=yes upgrade=yes" --become
 ```
 
+### Ad-hoc Commands (Windows)
+```bash
+# Check Windows info
+ansible windows -m ansible.windows.win_shell -a "hostname" --vault-password-file .vault_pass
+
+# Check disk space
+ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem" --vault-password-file .vault_pass
+
+# Run command on Windows
+ansible windows -m ansible.windows.win_command -a "whoami" --vault-password-file .vault_pass
+```
+
 ### Playbook
 ```bash
 # Run playbook
-ansible-playbook playbook.yml
+ansible-playbook playbook.yml --vault-password-file .vault_pass
 
 # Dry run
-ansible-playbook playbook.yml --check --diff
+ansible-playbook playbook.yml --check --diff --vault-password-file .vault_pass
 
 # Limit to specific host
 ansible-playbook playbook.yml --limit ubuntu
@@ -68,7 +100,54 @@ ansible aws_servers -m ping -vvv
 
 ## Playbooks
 
-### Install Apache
+### Install Apache (Linux)
 ```bash
 ansible-playbook playbooks/apache.yml
+```
+
+### Bootstrap WinRM (Windows)
+Спочатку запустіть PowerShell-скрипт на Windows для увімкнення WinRM:
+```powershell
+# On Windows machine (as Administrator)
+powershell -ExecutionPolicy Bypass -File playbooks/winrm-setup.ps1
+```
+Потім запустіть bootstrap-плейбук:
+```bash
+ansible-playbook playbooks/win-bootstrap.yml --vault-password-file .vault_pass
+```
+
+### Basic Windows Configuration
+```bash
+# Show system info
+ansible-playbook playbooks/win-config.yml --vault-password-file .vault_pass --tags "info"
+
+# Apply configuration
+ansible-playbook playbooks/win-config.yml --vault-password-file .vault_pass --tags "config"
+
+# Install Windows updates
+ansible-playbook playbooks/win-config.yml --vault-password-file .vault_pass --tags "update"
+
+# Security hardening
+ansible-playbook playbooks/win-config.yml --vault-password-file .vault_pass --tags "hardening"
+
+# Full configuration
+ansible-playbook playbooks/win-config.yml --vault-password-file .vault_pass
+```
+
+## Files
+
+```
+├── ansible.cfg              # Ansible configuration
+├── inventory.ini            # Hosts inventory
+├── .vault_pass              # Vault password file (DO NOT COMMIT)
+├── group_vars/
+│   └── windows.yml          # Encrypted vault file
+├── playbooks/
+│   ├── apache.yml           # Apache installation (Linux)
+│   ├── win-bootstrap.yml    # WinRM bootstrap (Windows)
+│   ├── win-config.yml       # Windows configuration
+│   └── winrm-setup.ps1      # PowerShell WinRM setup script
+├── ansible-skill/
+│   └── SKILL.md             # Best practices
+└── README.md
 ```

@@ -1,0 +1,10 @@
+# Vault password (NEVER commit this)
+.vault_pass
+
+# Debug logs
+*.log
+vault_debug.log
+
+# Python
+__pycache__/
+*.pyc

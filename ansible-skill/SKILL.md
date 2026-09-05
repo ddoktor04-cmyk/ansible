@@ -335,6 +335,25 @@ ansible-playbook site.yml --ask-vault-pass
 
 # Use vault password file
 ansible-playbook site.yml --vault-password-file=.vault_pass
+
+# Set vault_password_file in ansible.cfg (recommended)
+# [defaults]
+# vault_password_file = .vault_pass
+```
+
+### Store Secrets in group_vars
+
+```bash
+# Create vault-encrypted group_vars
+ansible-vault create group_vars/windows.yml
+# Content: win_password: my_secret_password
+
+# Reference in inventory.ini
+# ansible_winrm_password={{ win_password }}
+
+# Run with vault
+ansible-playbook site.yml
+# (vault_password_file in ansible.cfg auto-decrypts)
 ```
 
 ### Encrypt Variables
@@ -412,6 +431,133 @@ ansible-playbook site.yml --check --diff
         - {{ app_name }}
 ```
 
+## Windows Management (WinRM)
+
+### Windows Inventory
+
+```ini
+[windows]
+win10 ansible_host=172.14.50.80 ansible_user=user1
+
+[windows:vars]
+ansible_connection=winrm
+ansible_winrm_transport=basic
+ansible_winrm_server_cert_validation=ignore
+ansible_winrm_scheme=http
+ansible_port=5985
+ansible_winrm_password={{ win_password }}
+```
+
+### WinRM Bootstrap
+
+**Step 1: Enable WinRM on Windows (run on target):**
+
+```powershell
+# PowerShell script: winrm-setup.ps1
+Enable-PSRemoting -Force -SkipNetworkProfileCheck
+winrm quickconfig -q
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+winrm set winrm/config/service/auth '@{Basic="true"}'
+netsh advfirewall firewall add rule name="WinRM HTTP" dir=in action=allow protocol=TCP localport=5985
+Set-Service -Name WinRM -StartupType Automatic
+Start-Service -Name WinRM
+```
+
+**Step 2: Ansible bootstrap playbook:**
+
+```yaml
+---
+- name: Bootstrap WinRM on Windows
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Enable WinRM Quick Config
+      ansible.windows.win_shell: winrm quickconfig -q
+
+    - name: Allow unencrypted connections
+      ansible.windows.win_shell: >
+        winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+
+    - name: Enable Basic authentication
+      ansible.windows.win_shell: >
+        winrm set winrm/config/service/auth '@{Basic="true"}'
+
+    - name: Open firewall port 5985
+      ansible.windows.win_shell: >
+        netsh advfirewall firewall add rule name="WinRM HTTP"
+        dir=in action=allow protocol=TCP localport=5985
+
+    - name: Ensure WinRM service is running
+      ansible.windows.win_service:
+        name: WinRM
+        state: started
+        startup_type: automatic
+```
+
+### Windows Playbook Example
+
+```yaml
+---
+- name: Configure Windows server
+  hosts: windows
+  gather_facts: yes
+
+  tasks:
+    - name: Display system info
+      ansible.windows.win_shell: hostname
+      register: host_info
+
+    - name: Set timezone
+      community.windows.win_timezone:
+        timezone: Europe/Kyiv
+
+    - name: Install Windows updates
+      ansible.windows.win_updates:
+        category_names:
+          - CriticalUpdates
+          - SecurityUpdates
+        state: installed
+
+    - name: Enable firewall
+      community.windows.win_firewall:
+        state: enabled
+        profiles:
+          - Domain
+          - Private
+          - Public
+
+    - name: Disable unnecessary services
+      ansible.windows.win_service:
+        name: "{{ item }}"
+        state: stopped
+        startup_type: disabled
+      loop:
+        - SysMain
+        - DiagTrack
+```
+
+### Windows Ad-hoc Commands
+
+```bash
+# Test connection
+ansible windows -m ansible.windows.win_ping
+
+# Run command
+ansible windows -m ansible.windows.win_shell -a "whoami"
+
+# Check disk
+ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem"
+
+# Run executable
+ansible windows -m ansible.windows.win_command -a "dir C:\\"
+```
+
+### Requirements
+
+- `ansible.windows` collection: `ansible-galaxy collection install ansible.windows`
+- `community.windows` collection: `ansible-galaxy collection install community.windows`
+- Python `pywinrm` package: `pip install pywinrm`
+
 ## Checklist
 
 - [ ] Inventory файли структуровані за середовищами
@@ -420,5 +566,7 @@ ansible-playbook site.yml --check --diff
 - [ ] Playbook'и ідемпотентні
 - [ ] Використовуються теги для групування тасків
 - [ ] Чутливі дані захищені через vault
+- [ ] Vault password file в .gitignore
+- [ ] WinRM bootstrap виконано на Windows хостах
 - [ ] Тести перед застосуванням (--check --diff)
 - [ ] Документація в README
