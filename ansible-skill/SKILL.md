@@ -402,7 +402,43 @@ ansible_winrm_scheme=http
 ansible_port=5985
 ```
 
-> Пароль вводиться при запиті через `-k` flag, не зберігається в inventory.
+> Пароль вводиться при запиті через `-k` flag або зберігається у vault файлі.
+
+### Vault-encrypted password for WinRM
+
+Для автоматичного автологіну без `-k` використовується `ansible-vault` для шифрування пароля:
+
+**Крок 1: Зашифрувати пароль (на Linux сервері):**
+```bash
+ansible-vault encrypt_string 'your_password' --name 'ansible_password'
+```
+
+**Крок 2: Зберегти у `group_vars/windows/vault.yml`:**
+```yaml
+ansible_password: !vault |
+  ANSIBLE_VAULT;1.1;AES256
+  <зашифрований_вивід>
+```
+
+> **Важливо:** `!vault` синтаксис працює тільки в YAML, не в INI! Тому пароль зберігається в окремому vault файлі.
+
+**Крок 3: Налаштувати vault password file:**
+```bash
+echo "your_vault_password" > ~/.ansible/vault_pass.txt
+chmod 600 ~/.ansible/vault_pass.txt
+```
+
+**Крок 4: Додати в `ansible.cfg`:**
+```ini
+[defaults]
+vault_password_file = ~/.ansible/vault_pass.txt
+```
+
+**Результат:** Всі команди працюють без `-k`:
+```bash
+ansible windows -m ansible.windows.win_ping
+ansible-playbook playbooks/win-config.yml
+```
 
 ### WinRM Bootstrap
 
@@ -495,17 +531,17 @@ Start-Service -Name WinRM
 ### Windows Ad-hoc Commands
 
 ```bash
-# Test connection (password prompted with -k)
-ansible windows -m ansible.windows.win_ping -k
+# Test connection (без -k, vault password автоматично)
+ansible windows -m ansible.windows.win_ping
 
 # Run command
-ansible windows -m ansible.windows.win_shell -a "whoami" -k
+ansible windows -m ansible.windows.win_shell -a "whoami"
 
 # Check disk
-ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem" -k
+ansible windows -m ansible.windows.win_shell -a "Get-PSDrive -PSProvider FileSystem"
 
 # Run executable
-ansible windows -m ansible.windows.win_command -a "dir C:\\\\" -k
+ansible windows -m ansible.windows.win_command -a "dir C:\\\\"
 ```
 
 ### Requirements
@@ -515,6 +551,14 @@ ansible windows -m ansible.windows.win_command -a "dir C:\\\\" -k
 - Python `pywinrm` package: `pip install pywinrm`
 
 ### Troubleshooting WinRM
+
+#### "Attempting to decrypt but no vault secrets found"
+
+**Причина:** Зашифрований пароль у vault файлі, але Ansible не має ключ для розшифрування.
+
+**Рішення:**
+1. Додати `vault_password_file = ~/.ansible/vault_pass.txt` в `ansible.cfg`
+2. Або використовувати `--ask-vault-pass` при запуску
 
 #### "the specified credentials were rejected by the server"
 
